@@ -1,0 +1,43 @@
+syntax = "proto3";
+package messenger;
+
+option go_package = "models/";
+
+// [START messages]
+message Message {
+  string uid = 1;
+  User holder = 2;
+  string chatId = 3;
+  string text = 4;
+  int64 sendTime = 5;
+}
+
+message User {
+  string uid = 1;
+  string name = 2;
+}
+
+message Chat {
+  string uid = 1;
+  ChatType type = 2;
+  int32 unreadMessages = 3;
+  repeated User members = 4;
+
+  enum ChatType {
+    SINGLE = 0;
+    GROUP = 1;
+  }
+}
+
+message ChatList {
+  repeated Chat chats = 1;
+}
+
+message NewChat {
+  Chat newChat = 1;
+}
+
+message NewMessages {
+  repeated Message messages = 1;
+}
+// [END messages]
