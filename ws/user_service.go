@@ -48,15 +48,18 @@ func (user *User) read() {
 			}
 			break
 		}
+		log.Println("...bytes have been read")
 
 		newMessage := new(models.Message)
 		err = proto.Unmarshal(data, newMessage)
+		log.Println("...proto unmarshaled")
 		user.handleNewMessage(newMessage)
 	}
 }
 
 func (user *User) handleNewMessage(protoMsg *models.Message) {
 	msg := UnwrapMessage(protoMsg, user.server)
+	log.Println("...message unwrapped")
 	user.server.broadcast <- msg
 }
 
