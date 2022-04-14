@@ -10,6 +10,7 @@ type Chat struct {
 	uid      string
 	users    map[string]*User
 	messages map[string]*Message
+	chatType string
 
 	server *Server
 }
@@ -19,6 +20,7 @@ func NewChat(members []string, server *Server) *Chat {
 		uid:      uuid.New().String(),
 		users:    make(map[string]*User),
 		messages: make(map[string]*Message),
+		chatType: "SINGLE",
 		server:   server,
 	}
 	for _, v := range members {
@@ -39,6 +41,7 @@ func (chat *Chat) Wrap() *models.Chat {
 	}
 	return &models.Chat{
 		Uid:      chat.uid,
+		ChatType: chat.chatType,
 		Members:  members,
 		Messages: messages,
 	}
@@ -56,4 +59,7 @@ func (chat *Chat) sendMessage(msg *Message) {
 func (chat *Chat) addNewUser(user *User) {
 	chat.users[user.uid] = user
 	user.chats[chat.uid] = chat
+	if len(chat.users) > 2 {
+		chat.chatType = "MULTIPLE"
+	}
 }
