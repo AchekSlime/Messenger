@@ -30,7 +30,3 @@ func UnwrapMessage(protoMsg *models.Message, server *Server) *Message {
 		SendTime: protoMsg.SendTime,
 	}
 }
-
-func (msg *Message) setChat(chat *Chat) {
-	msg.Chat = chat
-}

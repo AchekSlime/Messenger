@@ -12,10 +12,12 @@ type User struct {
 	uid  string
 	name string
 
-	server *Server
-	Conn   *websocket.Conn
+	server           *Server
+	Conn             *websocket.Conn
+	ConnectionOpened bool
 
-	broadcast chan *Message
+	notReadMsg []*Message
+	broadcast  chan *Message
 }
 
 func NewUser(name string, server *Server) *User {
@@ -34,6 +36,13 @@ func (user *User) Wrap() *models.User {
 	}
 }
 
+func (user *User) handleNewMessage(protoMsg *models.Message) {
+	msg := UnwrapMessage(protoMsg, user.server)
+	log.Println("...message unwrapped")
+	user.server.broadcast <- msg
+	log.Println("...message pushed into chat")
+}
+
 func (user *User) read() {
 	defer func() {
 		// todo трекаем что конекшн разорвался
@@ -44,6 +53,7 @@ func (user *User) read() {
 		_, data, err := user.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				user.ConnectionOpened = false
 				log.Printf("error: %v", err)
 			}
 			break
@@ -57,13 +67,6 @@ func (user *User) read() {
 	}
 }
 
-func (user *User) handleNewMessage(protoMsg *models.Message) {
-	msg := UnwrapMessage(protoMsg, user.server)
-	log.Println("...message unwrapped")
-	user.server.broadcast <- msg
-	log.Println("...message pushed into chat")
-}
-
 func (user *User) write() {
 	for {
 		select {
@@ -72,6 +75,20 @@ func (user *User) write() {
 			data, _ := proto.Marshal(protoMsg)
 			user.Conn.WriteMessage(websocket.BinaryMessage, data)
 		}
-
 	}
+}
+
+func (user *User) writeNotReadMsg() {
+	if len(user.notReadMsg) < 1 {
+		return
+	}
+
+	messages := make([]*models.Message, 5)
+	for _, msg := range user.notReadMsg {
+		messages = append(messages, msg.Wrap())
+	}
+
+	protoNewMessages := &models.NewMessages{Messages: messages}
+	data, _ := proto.Marshal(protoNewMessages)
+	user.Conn.WriteMessage(websocket.BinaryMessage, data)
 }

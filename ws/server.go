@@ -47,6 +47,7 @@ func (server *Server) regNewUser(user *User) string {
 
 func (server *Server) regNewChat(chat *Chat) string {
 	server.chats[chat.uid] = chat
+
 	return chat.uid
 }
 
@@ -64,13 +65,13 @@ func (server *Server) StartServer(ch chan struct{}) {
 		config(server, w, r)
 	})
 
-	log.Println("•••server started•••")
+	log.Println("••• SERVER STARTED •••")
 	http.ListenAndServe(":8070", nil) // Уводим utils сервер в горутину
 }
 
 func (server *Server) connection(w http.ResponseWriter, r *http.Request) {
 	// авторизация
-	user, err := server.getUser(((r.URL.Query()["uid"])[0]))
+	user, err := server.getUser((r.URL.Query()["uid"])[0])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		log.Println("...invalid uid")
@@ -79,12 +80,13 @@ func (server *Server) connection(w http.ResponseWriter, r *http.Request) {
 
 	// ws соединение
 	connection, _ := upgrader.Upgrade(w, r, nil)
-	log.Printf("••• connection opened with uid=%d •••\n", user.uid)
+	log.Printf("••• CONNECTION OPENED with uid=%s •••\n", user.uid)
 
 	// сохранили
-	user.Conn = connection        // сохранили пользователю соединение
-	server.users[user.uid] = user // сохранили юзера в мэп
-
+	user.Conn = connection // сохранили пользователю соединение
+	user.ConnectionOpened = true
+	//server.users[user.uid] = user // сохранили юзера в мэп
+	user.writeNotReadMsg()
 	// отправили в горутины читать/писать
 	go user.read()
 	go user.write()
