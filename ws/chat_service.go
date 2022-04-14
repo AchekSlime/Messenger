@@ -1,6 +1,9 @@
 package ws
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"log"
+)
 
 type Chat struct {
 	uid   string
@@ -22,8 +25,10 @@ func NewChat(members []string, server *Server) *Chat {
 	return &chat
 }
 
-func (room *Chat) sendMessage(msg *Message) {
-	for _, user := range room.users {
+func (chat *Chat) sendMessage(msg *Message) {
+	log.Println("..sending to other members")
+	for _, user := range chat.users {
 		user.broadcast <- msg
 	}
+	log.Println("...has been send")
 }

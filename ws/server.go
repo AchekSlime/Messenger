@@ -20,11 +20,13 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	return &Server{
+	server := Server{
 		chats:     make(map[string]*Chat),
 		users:     make(map[string]*User),
 		broadcast: make(chan *Message),
 	}
+	go server.route()
+	return &server
 }
 
 func (server *Server) getChat(chatId string) *Chat {
@@ -87,9 +89,12 @@ func (server *Server) connection(w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *Server) route() {
-	select {
-	case msg := <-server.broadcast:
-		msg.Chat.sendMessage(msg)
+	for {
+		select {
+		case msg := <-server.broadcast:
+			log.Println("...message delivered to chat")
+			msg.Chat.sendMessage(msg)
+		}
 	}
 }
 

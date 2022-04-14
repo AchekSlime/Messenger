@@ -61,6 +61,7 @@ func (user *User) handleNewMessage(protoMsg *models.Message) {
 	msg := UnwrapMessage(protoMsg, user.server)
 	log.Println("...message unwrapped")
 	user.server.broadcast <- msg
+	log.Println("...message pushed into chat")
 }
 
 func (user *User) write() {
