@@ -17,18 +17,6 @@ message User {
   string name = 2;
 }
 
-message Chat {
-  string uid = 1;
-  ChatType type = 2;
-  int32 unreadMessages = 3;
-  repeated User members = 4;
-
-  enum ChatType {
-    SINGLE = 0;
-    GROUP = 1;
-  }
-}
-
 message ChatList {
   repeated Chat chats = 1;
 }
@@ -37,7 +25,14 @@ message NewChat {
   Chat newChat = 1;
 }
 
-message NewMessages {
-  repeated Message messages = 1;
+message Chat {
+  string uid = 1;
+  repeated User members = 4;
+  repeated Message messages = 5;
+
+}
+
+message Connection {
+  repeated Chat chats = 1;
 }
 // [END messages]

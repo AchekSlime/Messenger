@@ -16,6 +16,11 @@ type ChatDto struct {
 	users []string
 }
 
+type Config struct {
+	ChatType string
+	ChatId   string
+}
+
 func mapUser(user *UserDto, server *Server) *User {
 	return NewUser(user.name, server)
 }
@@ -50,7 +55,7 @@ func newChatRequestHandler(server *Server, w http.ResponseWriter, r *http.Reques
 	w.Write([]byte(uid))
 }
 
-func config(server *Server, w http.ResponseWriter, r *http.Request) {
+func template(server *Server, w http.ResponseWriter, r *http.Request) {
 	userDto1 := UserDto{name: "achek"}
 	userDto2 := UserDto{name: "egor"}
 
@@ -63,4 +68,29 @@ func config(server *Server, w http.ResponseWriter, r *http.Request) {
 	ans := uid1 + " " + uid2 + " " + uidChat
 
 	w.Write([]byte(ans))
+}
+
+func config(server *Server, w http.ResponseWriter, r *http.Request) {
+	user, err := server.getUser((r.URL.Query()["uid"])[0])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		log.Println("...invalid uid")
+		return
+	}
+
+	var chatUid string
+	var config *Config
+	if len(user.chats) == 1 {
+		for _, v := range user.chats {
+			chatUid = v.uid
+		}
+		config = &Config{"SINGLE", chatUid}
+	} else {
+		config = &Config{"MULTIPLE", ""}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	data, _ := json.Marshal(config)
+	w.Write(data)
 }

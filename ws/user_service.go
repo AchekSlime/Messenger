@@ -9,8 +9,9 @@ import (
 )
 
 type User struct {
-	uid  string
-	name string
+	uid   string
+	name  string
+	chats map[string]*Chat
 
 	server           *Server
 	Conn             *websocket.Conn
@@ -22,10 +23,12 @@ type User struct {
 
 func NewUser(name string, server *Server) *User {
 	return &User{
-		uid:       uuid.New().String(),
-		name:      name,
-		broadcast: make(chan *Message),
-		server:    server,
+		uid:        uuid.New().String(),
+		name:       name,
+		chats:      make(map[string]*Chat),
+		server:     server,
+		broadcast:  make(chan *Message),
+		notReadMsg: make([]*Message, 0),
 	}
 }
 
@@ -34,13 +37,6 @@ func (user *User) Wrap() *models.User {
 		Uid:  user.uid,
 		Name: user.name,
 	}
-}
-
-func (user *User) handleNewMessage(protoMsg *models.Message) {
-	msg := UnwrapMessage(protoMsg, user.server)
-	log.Println("...message unwrapped")
-	user.server.broadcast <- msg
-	log.Println("...message pushed into chat")
 }
 
 func (user *User) read() {
@@ -71,24 +67,30 @@ func (user *User) write() {
 	for {
 		select {
 		case msg := <-user.broadcast:
-			protoMsg := msg.Wrap()
-			data, _ := proto.Marshal(protoMsg)
-			user.Conn.WriteMessage(websocket.BinaryMessage, data)
+			if user.ConnectionOpened == true {
+				protoMsg := msg.Wrap()
+				data, _ := proto.Marshal(protoMsg)
+				user.Conn.WriteMessage(websocket.BinaryMessage, data)
+			} else {
+				user.notReadMsg = append(user.notReadMsg, msg)
+			}
+
 		}
 	}
 }
+func (user *User) handleNewMessage(protoMsg *models.Message) {
+	msg := UnwrapMessage(protoMsg, user.server)
+	log.Println("...message unwrapped")
+	user.server.broadcast <- msg
+	log.Println("...message pushed into chat")
+}
 
-func (user *User) writeNotReadMsg() {
-	if len(user.notReadMsg) < 1 {
-		return
+func (user *User) writeChats() {
+	chats := make([]*models.Chat, 0)
+	for _, chat := range user.chats {
+		chats = append(chats, chat.Wrap())
 	}
-
-	messages := make([]*models.Message, 5)
-	for _, msg := range user.notReadMsg {
-		messages = append(messages, msg.Wrap())
-	}
-
-	protoNewMessages := &models.NewMessages{Messages: messages}
-	data, _ := proto.Marshal(protoNewMessages)
+	connectionMessage := &models.Connection{Chats: chats}
+	data, _ := proto.Marshal(connectionMessage)
 	user.Conn.WriteMessage(websocket.BinaryMessage, data)
 }

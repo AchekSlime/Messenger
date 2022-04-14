@@ -17,6 +17,7 @@ type Server struct {
 	users map[string]*User
 
 	broadcast chan *Message
+	newChat   chan *Chat
 }
 
 func NewServer() *Server {
@@ -24,6 +25,7 @@ func NewServer() *Server {
 		chats:     make(map[string]*Chat),
 		users:     make(map[string]*User),
 		broadcast: make(chan *Message),
+		newChat:   make(chan *Chat),
 	}
 	go server.route()
 	return &server
@@ -47,7 +49,7 @@ func (server *Server) regNewUser(user *User) string {
 
 func (server *Server) regNewChat(chat *Chat) string {
 	server.chats[chat.uid] = chat
-
+	server.newChat <- chat
 	return chat.uid
 }
 
@@ -60,6 +62,9 @@ func (server *Server) StartServer(ch chan struct{}) {
 	})
 	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
 		newUserRequestHandler(server, w, r)
+	})
+	http.HandleFunc("/template", func(w http.ResponseWriter, r *http.Request) {
+		template(server, w, r)
 	})
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		config(server, w, r)
@@ -86,7 +91,7 @@ func (server *Server) connection(w http.ResponseWriter, r *http.Request) {
 	user.Conn = connection // сохранили пользователю соединение
 	user.ConnectionOpened = true
 	//server.users[user.uid] = user // сохранили юзера в мэп
-	user.writeNotReadMsg()
+	user.writeChats()
 	// отправили в горутины читать/писать
 	go user.read()
 	go user.write()
@@ -98,7 +103,10 @@ func (server *Server) route() {
 		case msg := <-server.broadcast:
 			log.Println("...message delivered to chat")
 			msg.Chat.sendMessage(msg)
+		case chat := <-server.newChat:
+			log.Println("...newChat " + chat.uid)
 		}
+
 	}
 }
 
