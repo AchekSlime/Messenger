@@ -48,6 +48,7 @@ func (chat *Chat) Wrap() *models.Chat {
 }
 
 func (chat *Chat) sendMessage(msg *Message) {
+	log.Println("...saving msg to chat")
 	chat.messages[msg.Uid] = msg
 	log.Println("...sending to other members")
 	for _, user := range chat.users {
