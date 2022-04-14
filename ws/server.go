@@ -73,6 +73,8 @@ func (server *Server) connection(w http.ResponseWriter, r *http.Request) {
 	user, err := server.getUser(((r.URL.Query()["uid"])[0]))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
+		log.Println("...invalid uid")
+		return
 	}
 
 	// ws соединение

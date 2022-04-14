@@ -26,7 +26,7 @@ func NewChat(members []string, server *Server) *Chat {
 }
 
 func (chat *Chat) sendMessage(msg *Message) {
-	log.Println("..sending to other members")
+	log.Println("...sending to other members")
 	for _, user := range chat.users {
 		user.broadcast <- msg
 	}
