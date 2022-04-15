@@ -15,6 +15,10 @@ type UserRegRequestDto struct {
 	Password string
 }
 
+type UserRegResponseDto struct {
+	Login string
+}
+
 type ChatRequestDto struct {
 	Users []string
 }
@@ -58,9 +62,11 @@ func regUserHandler(server *Server, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid := server.regNewUser(mapUser(&user, server))
+	login := server.regNewUser(mapUser(&user, server))
+
+	data, _ := json.Marshal(UserRegResponseDto{Login: login})
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(uid))
+	w.Write(data)
 }
 
 func authUser(server *Server, w http.ResponseWriter, r *http.Request) {
