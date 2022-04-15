@@ -42,6 +42,15 @@ func (server *Server) getUser(userId string) (*User, error) {
 	return nil, errors.New("user not found")
 }
 
+func (server *Server) findByLogin(login string) *User {
+	for _, v := range server.users {
+		if v.login == login {
+			return v
+		}
+	}
+	return nil
+}
+
 func (server *Server) regNewUser(user *User) string {
 	server.users[user.uid] = user
 	return user.uid
@@ -58,16 +67,19 @@ func (server *Server) StartServer(ch chan struct{}) {
 
 	http.HandleFunc("/connection", server.connection)
 	http.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
-		newChatRequestHandler(server, w, r)
+		regChatHandler(server, w, r)
 	})
-	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-		newUserRequestHandler(server, w, r)
+	http.HandleFunc("/reg", func(w http.ResponseWriter, r *http.Request) {
+		regUserHandler(server, w, r)
 	})
-	http.HandleFunc("/template", func(w http.ResponseWriter, r *http.Request) {
-		template(server, w, r)
+	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
+		authUser(server, w, r)
 	})
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		config(server, w, r)
+	})
+	http.HandleFunc("/template", func(w http.ResponseWriter, r *http.Request) {
+		template(server, w, r)
 	})
 
 	log.Println("••• SERVER STARTED •••")
@@ -75,17 +87,12 @@ func (server *Server) StartServer(ch chan struct{}) {
 }
 
 func (server *Server) connection(w http.ResponseWriter, r *http.Request) {
-	// авторизация
-	user, err := server.getUser((r.URL.Query()["uid"])[0])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		log.Println("...invalid uid")
-		return
-	}
+	// распарсили токен
+	user := server.getUserFromToken(r)
 
 	// ws соединение
 	connection, _ := upgrader.Upgrade(w, r, nil)
-	log.Printf("••• CONNECTION OPENED with user=%s •••\n", user.name)
+	log.Printf("••• CONNECTION OPENED with user %s •••\n", user.name)
 
 	// сохранили
 	user.Conn = connection // сохранили пользователю соединение
@@ -95,6 +102,17 @@ func (server *Server) connection(w http.ResponseWriter, r *http.Request) {
 	// отправили в горутины читать/писать
 	go user.read()
 	go user.write()
+}
+
+func (server *Server) getUserFromToken(r *http.Request) *User {
+	token := r.URL.Query()["token"][0]
+	login := parseToken(token)
+	user := server.findByLogin(login)
+	return user
+}
+
+func (server *Server) getUserFromUid(r *http.Request) (*User, error) {
+	return server.getUser((r.URL.Query()["uid"])[0])
 }
 
 func (server *Server) route() {

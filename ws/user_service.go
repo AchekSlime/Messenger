@@ -11,6 +11,7 @@ import (
 type User struct {
 	uid   string
 	name  string
+	login string
 	chats map[string]*Chat
 
 	server           *Server
@@ -20,10 +21,11 @@ type User struct {
 	broadcast chan *Message
 }
 
-func NewUser(name string, server *Server) *User {
+func NewUser(name string, login string, server *Server) *User {
 	return &User{
 		uid:       uuid.New().String(),
 		name:      name,
+		login:     login,
 		chats:     make(map[string]*Chat),
 		server:    server,
 		broadcast: make(chan *Message),
@@ -41,6 +43,7 @@ func (user *User) read() {
 	defer func() {
 		// todo трекаем что конекшн разорвался
 		// todo закрываем конекшн
+		user.Conn.Close()
 	}()
 
 	for {
