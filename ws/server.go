@@ -85,7 +85,7 @@ func (server *Server) connection(w http.ResponseWriter, r *http.Request) {
 
 	// ws соединение
 	connection, _ := upgrader.Upgrade(w, r, nil)
-	log.Printf("••• CONNECTION OPENED with uid=%s •••\n", user.uid)
+	log.Printf("••• CONNECTION OPENED with user=%s •••\n", user.name)
 
 	// сохранили
 	user.Conn = connection // сохранили пользователю соединение

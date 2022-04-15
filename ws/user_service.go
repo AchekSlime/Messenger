@@ -17,18 +17,16 @@ type User struct {
 	Conn             *websocket.Conn
 	ConnectionOpened bool
 
-	notReadMsg []*Message
-	broadcast  chan *Message
+	broadcast chan *Message
 }
 
 func NewUser(name string, server *Server) *User {
 	return &User{
-		uid:        uuid.New().String(),
-		name:       name,
-		chats:      make(map[string]*Chat),
-		server:     server,
-		broadcast:  make(chan *Message),
-		notReadMsg: make([]*Message, 0),
+		uid:       uuid.New().String(),
+		name:      name,
+		chats:     make(map[string]*Chat),
+		server:    server,
+		broadcast: make(chan *Message),
 	}
 }
 
@@ -67,14 +65,12 @@ func (user *User) write() {
 	for {
 		select {
 		case msg := <-user.broadcast:
-			if user.ConnectionOpened == true {
-				protoMsg := msg.Wrap()
-				data, _ := proto.Marshal(protoMsg)
-				user.Conn.WriteMessage(websocket.BinaryMessage, data)
-			} else {
-				user.notReadMsg = append(user.notReadMsg, msg)
+			protoMsg := msg.Wrap()
+			data, _ := proto.Marshal(protoMsg)
+			err := user.Conn.WriteMessage(websocket.BinaryMessage, data)
+			if err != nil {
+				log.Println("user.write() err: " + err.Error())
 			}
-
 		}
 	}
 }
