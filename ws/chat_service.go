@@ -27,6 +27,9 @@ func NewChat(members []string, server *Server) *Chat {
 		user, _ := server.getUser(v)
 		chat.addNewUser(user)
 	}
+	if len(chat.users) > 2 {
+		chat.chatType = "MULTIPLE"
+	}
 	return &chat
 }
 

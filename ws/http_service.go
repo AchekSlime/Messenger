@@ -102,13 +102,7 @@ func regChatHandler(server *Server, w http.ResponseWriter, r *http.Request) {
 }
 
 func config(server *Server, w http.ResponseWriter, r *http.Request) {
-	user, err := server.getUser((r.URL.Query()["uid"])[0])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		log.Println("...invalid uid")
-		return
-	}
-
+	user := server.getUserFromToken(r)
 	var chatUid string
 	var config *Config
 	if len(user.chats) == 1 {
