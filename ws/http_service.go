@@ -59,7 +59,7 @@ func regUserHandler(server *Server, w http.ResponseWriter, r *http.Request) {
 	}
 
 	uid := server.regNewUser(mapUser(&user, server))
-	// toDo прокинуть статус
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(uid))
 }
 
@@ -83,7 +83,7 @@ func authUser(server *Server, w http.ResponseWriter, r *http.Request) {
 		log.Println("token err " + err.Error())
 	}
 	data, _ := json.Marshal(UserAuthResponseDto{Uid: user.uid, Token: tokenString})
-	// toDo прокинуть статус
+	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 	log.Println("...user <" + user.name + "> successfully authorized")
 }
