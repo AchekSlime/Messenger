@@ -52,7 +52,9 @@ func (chat *Chat) sendMessage(msg *Message) {
 	chat.messages[msg.Uid] = msg
 	log.Println("...sending to other members")
 	for _, user := range chat.users {
-		user.broadcast <- msg
+		if user.ConnectionOpened {
+			user.broadcast <- msg
+		}
 	}
 	log.Println("...has been send")
 }
